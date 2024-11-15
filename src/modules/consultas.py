@@ -9,8 +9,7 @@ import time
 palavras_chave_dominios = [
     'mob', 'apicesc', 'arquivei', 'oi.digital', 'algartelecom',
     'infinity', 'npxtech', 'alares', 'gigamaisfibra',
-    'desempenho', 'brisanet', 'apicesc',
-    'hostgator'
+    'desempenho', 'brisanet', 'hostgator'
 ]
 
 def download_anexos(data_inicio):
@@ -25,13 +24,13 @@ def download_anexos(data_inicio):
         for num in numEmails[0].split():
             try:
                 status, dados = conn.fetch(num, '(RFC822)')
-                conteudo_email = dados[0][1] 
+                conteudo_email = dados[0][1] # type: ignore
 
-                detect_encoding = chardet.detect(conteudo_email)['encoding']
+                detect_encoding = chardet.detect(conteudo_email)['encoding'] # type: ignore
                 try:
-                    conteudo_email = conteudo_email.decode(detect_encoding)
+                    conteudo_email = conteudo_email.decode(detect_encoding) # type: ignore
                 except:
-                    conteudo_email = conteudo_email.decode('utf-8', errors='ignore') 
+                    conteudo_email = conteudo_email.decode('utf-8', errors='ignore') # type: ignore
                 
                 conteudo_email = email.message_from_string(conteudo_email)
 
@@ -46,17 +45,6 @@ def download_anexos(data_inicio):
                 
                 obj_email = PerfilEmail(assunto, remetente_email, remetente_nome, dominio, data, destinatario, mes_ano)
 
-                # print(f'''
-                # Os dados do cabeçalho são:
-                # assunto: {obj_email.assunto}
-                # remetente_email: {obj_email.remetente_email}
-                # remetente_nome: {obj_email.remetente_nome}
-                # dominio: {obj_email.dominio}
-                # data: {obj_email.data}
-                # mes_ano: {obj_email.mes_ano}
-                # destinatario: {obj_email.destinatario}
-                # ''')
-
                 executar_segundo_for = False
 
                 for palavra in palavras_chave_dominios:
@@ -70,7 +58,7 @@ def download_anexos(data_inicio):
             except imaplib.IMAP4.abort as e:
                 print(f"Conexão abortada: {e}. Tentando reconectar...")
                 conn = reconnection()
-                download_anexos()  # Reinicia a busca de e-mails
+                download_anexos() # type: ignore # Reinicia a busca de e-mails
                 return
             except Exception as e:
                 print(f"Erro ao processar o email {num}: {e}")
@@ -78,4 +66,4 @@ def download_anexos(data_inicio):
     except Exception as e:
         print(f"Erro de conexão inicial: {e}")
         time.sleep(10)
-        download_anexos()  # Tenta novamente em caso de falha na conexão inicial
+        download_anexos() # type: ignore # Tenta novamente em caso de falha na conexão inicial

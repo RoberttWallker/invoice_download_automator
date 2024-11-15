@@ -5,7 +5,7 @@ def main():
     while True:
         escolha = input('''
     Escolha uma das opções:
-    1 - Download inicial (01-11-2024)
+    1 - Download inicial
     2 - Download incremental (Somente hoje)
     Q - Sair
     >>> ''')

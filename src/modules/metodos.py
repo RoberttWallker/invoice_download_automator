@@ -1,10 +1,10 @@
-
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_tz
 import re
 from datetime import datetime
 from time import mktime
 import os
+from pathlib import Path
 
 
 def assunto_from_bytes(subject):
@@ -73,7 +73,7 @@ def salvar_arqruivos(conteudo_email, obj_email, palavra_chave_dominio):
             continue
         if part.get('Content-Disposition') is None:
             continue
-        filePath = 'Z:/CONTAS'
+        filePath = 'E:/CONTAS'
         filePathCompleto = f'{filePath}/{palavra_chave_dominio}/{obj_email.remetente_email}/{obj_email.mes_ano}'
 
         # Cria os diretórios, se necessário
@@ -81,8 +81,49 @@ def salvar_arqruivos(conteudo_email, obj_email, palavra_chave_dominio):
 
         fileNameLimpo = limpar_nome_arquivo(part.get_filename())
         fileNameTimed = f'{obj_email.data}_{fileNameLimpo}'
-        print(f'Gravando {fileNameTimed}')
         fileComplete = f'{filePathCompleto}/{fileNameTimed}'
-        arquivo = open(fileComplete, 'wb')
-        arquivo.write(part.get_payload(decode=True))
-        arquivo.close()
+        if not os.path.exists(fileComplete):
+            print(f'Gravando {fileNameTimed}')
+            with open(fileComplete, 'wb') as arquivo:
+                arquivo.write(part.get_payload(decode=True))
+                arquivo.close()
+        else:
+            print(f'O arquivo: {fileComplete} já existe.')
+
+def formatar_data(data):
+    data_formatada = datetime.strptime(data, "%d/%m/%Y").strftime("%d-%b-%Y")
+    return data_formatada
+
+def ghost_exec_creation(bat_file, vbs_file, root_path):
+    if Path(bat_file).exists() and Path(vbs_file).exists():
+        print("Os arquivos BAT e VBS já existem. Nenhuma ação foi realizada.\n")
+        return  # Sai da função se os arquivos já existem
+    
+    root = Path(root_path)
+    venv_folder = None
+
+    for folder in root.iterdir():
+        if folder.is_dir() and (folder/"pyvenv.cfg").exists():
+            venv_folder =  folder.name
+            break
+    
+    if venv_folder is None:
+        print("Ambiente virtual não encontrado. Certifique-se de que existe uma pasta com 'pyvenv.cfg'.")
+        return
+    
+    bat_content = f"""@echo off
+cd "{root_path}"
+call {venv_folder}\\Scripts\\activate
+python src\\controller\\incremental_schedule.py
+"""
+    with open(bat_file, "w") as bat_file_name:
+        bat_file_name.write(bat_content)
+    print(f"Arquivo BAT criado em: {bat_file}")
+
+    # Criação do arquivo .vbs
+    vbs_content = f'''Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run """{str(bat_file)}""", 0, False
+'''
+    with open(vbs_file, "w") as vbs_file_name:
+        vbs_file_name.write(vbs_content)
+    print(f"Arquivo VBS criado em: {vbs_file}\n")
