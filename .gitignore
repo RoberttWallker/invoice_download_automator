@@ -2,3 +2,4 @@
 venv/
 **.vbs
 **.bat
+**.json

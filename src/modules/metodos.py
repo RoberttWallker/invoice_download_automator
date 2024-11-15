@@ -1,14 +1,13 @@
+from .classes import PerfilEmail
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_tz
 import re
 from datetime import datetime
 from time import mktime
-import os
 from pathlib import Path
 
 
 def assunto_from_bytes(subject):
-    
     assunto, encoding = decode_header(subject)[0]
     if isinstance(assunto, bytes):
         try:
@@ -32,14 +31,11 @@ def obter_dominio(email):
     return email.split('@')[-1]
 
 def data_hora(data):
-
     parsed_date = parsedate_tz(data)
-    
     if parsed_date:
         # Converte a data para um objeto datetime sem considerar o fuso horario
         data_dt = datetime.fromtimestamp(mktime(parsed_date[:9]))
-        
-        # Extrai o mês da data
+        # Formata em data hora com "_"
         data_formatada = data_dt.strftime('%d_%m_%Y_%H_%M_%S')  # Ano e mês no formato 'YYYY-MM'
     else:
         data_formatada = 'data_nao_disponivel'  # Caso não tenha a data ou falhe a conversão
@@ -47,18 +43,14 @@ def data_hora(data):
     return data_formatada
 
 def obter_mes_ano(data):
-
     parsed_date = parsedate_tz(data)
-    
     if parsed_date:
         # Converte a data para um objeto datetime
         data_dt = datetime.fromtimestamp(mktime(parsed_date[:9]))
-        
-        # Extrai o mês da data
+        # Extrai mês ano da data com "_"
         mes_ano = data_dt.strftime('%m_%Y')  # Ano e mês no formato 'YYYY-MM'
     else:
         mes_ano = 'data_nao_disponivel'  # Caso não tenha a data ou falhe a conversão
-
     return mes_ano
 
 def limpar_nome_arquivo(nome):
@@ -67,32 +59,33 @@ def limpar_nome_arquivo(nome):
     # Substituir ou remover caracteres inválidos para Windows
     return re.sub(r'[<>:"/\\|?*\n\t\r\b\f\v\'\" \0-]', "_", nome)
 
+def formatar_data(data):
+    data_formatada = datetime.strptime(data, "%d/%m/%Y").strftime("%d-%b-%Y")
+    return data_formatada
+
 def salvar_arqruivos(conteudo_email, obj_email, palavra_chave_dominio):
     for part in conteudo_email.walk():
         if part.get_content_maintype() == 'multipart':
             continue
         if part.get('Content-Disposition') is None:
             continue
-        filePath = 'E:/CONTAS'
-        filePathCompleto = f'{filePath}/{palavra_chave_dominio}/{obj_email.remetente_email}/{obj_email.mes_ano}'
+        filePath = Path('E:/CONTAS')
+        filePathCompleto = filePath / palavra_chave_dominio / obj_email.remetente_email / obj_email.mes_ano
 
         # Cria os diretórios, se necessário
-        os.makedirs(filePathCompleto, exist_ok=True)
+        filePathCompleto.mkdir(parents=True, exist_ok=True)
 
         fileNameLimpo = limpar_nome_arquivo(part.get_filename())
         fileNameTimed = f'{obj_email.data}_{fileNameLimpo}'
-        fileComplete = f'{filePathCompleto}/{fileNameTimed}'
-        if not os.path.exists(fileComplete):
+        fileComplete = Path(filePathCompleto / fileNameTimed)
+
+        if not fileComplete.exists():
             print(f'Gravando {fileNameTimed}')
             with open(fileComplete, 'wb') as arquivo:
                 arquivo.write(part.get_payload(decode=True))
                 arquivo.close()
         else:
             print(f'O arquivo: {fileComplete} já existe.')
-
-def formatar_data(data):
-    data_formatada = datetime.strptime(data, "%d/%m/%Y").strftime("%d-%b-%Y")
-    return data_formatada
 
 def ghost_exec_creation(bat_file, vbs_file, root_path):
     if Path(bat_file).exists() and Path(vbs_file).exists():
@@ -127,3 +120,17 @@ WshShell.Run """{str(bat_file)}""", 0, False
     with open(vbs_file, "w") as vbs_file_name:
         vbs_file_name.write(vbs_content)
     print(f"Arquivo VBS criado em: {vbs_file}\n")
+
+def obter_perfil_email(conteudo_email):
+    # Recupera cabeçalhos principais do email
+    assunto = assunto_from_bytes(conteudo_email.get("Subject"))
+    remetente_email = parseaddr_email(conteudo_email.get("From"))
+    remetente_nome = parseaddr_nome(conteudo_email.get("From"))
+    data = data_hora(conteudo_email.get("Date"))
+    mes_ano = obter_mes_ano(conteudo_email.get("Date"))
+    destinatario = conteudo_email.get("To")
+    dominio = obter_dominio(remetente_email)
+
+    obj_email = PerfilEmail(assunto, remetente_email, remetente_nome, dominio, data, destinatario, mes_ano)
+                
+    return obj_email

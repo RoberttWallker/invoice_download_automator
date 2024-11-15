@@ -7,3 +7,9 @@ class PerfilEmail:
             self.data = data
             self.destinatario = destinatario
             self.mes_ano = mes_ano
+
+class ConnectionConfig:
+      def __init__(self, servidor, login, password):
+            self.servidor = servidor
+            self.login = login
+            self.password = password
