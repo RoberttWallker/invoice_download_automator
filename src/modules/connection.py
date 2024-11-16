@@ -4,7 +4,7 @@ import json
 import socket
 
 PATH_WORK = Path.cwd()
-filename = PATH_WORK / "imap_config.json"
+filename = PATH_WORK / "src/modules/config/imap_config.json"
 
 def save_config_imap(imap_config):
 

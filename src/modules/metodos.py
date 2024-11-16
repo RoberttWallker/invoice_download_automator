@@ -5,7 +5,9 @@ import re
 from datetime import datetime
 from time import mktime
 from pathlib import Path
+import json
 
+PATH_WORK = Path.cwd()
 
 def assunto_from_bytes(subject):
     assunto, encoding = decode_header(subject)[0]
@@ -87,6 +89,30 @@ def salvar_arqruivos(conteudo_email, obj_email, palavra_chave_dominio):
         else:
             print(f'O arquivo: {fileComplete} já existe.')
 
+def salvar_arqruivos_total(conteudo_email, obj_email):
+    for part in conteudo_email.walk():
+        if part.get_content_maintype() == 'multipart':
+            continue
+        if part.get('Content-Disposition') is None:
+            continue
+        filePath = Path('E:/CONTAS')
+        filePathCompleto = filePath / obj_email.remetente_email / obj_email.mes_ano
+
+        # Cria os diretórios, se necessário
+        filePathCompleto.mkdir(parents=True, exist_ok=True)
+
+        fileNameLimpo = limpar_nome_arquivo(part.get_filename())
+        fileNameTimed = f'{obj_email.data}_{fileNameLimpo}'
+        fileComplete = Path(filePathCompleto / fileNameTimed)
+
+        if not fileComplete.exists():
+            print(f'Gravando {fileNameTimed}')
+            with open(fileComplete, 'wb') as arquivo:
+                arquivo.write(part.get_payload(decode=True))
+                arquivo.close()
+        else:
+            print(f'O arquivo: {fileComplete} já existe.')
+
 def ghost_exec_creation(bat_file, vbs_file, root_path):
     if Path(bat_file).exists() and Path(vbs_file).exists():
         print("Os arquivos BAT e VBS já existem. Nenhuma ação foi realizada.\n")
@@ -134,3 +160,42 @@ def obter_perfil_email(conteudo_email):
     obj_email = PerfilEmail(assunto, remetente_email, remetente_nome, dominio, data, destinatario, mes_ano)
                 
     return obj_email
+
+def criar_lista_dominios():
+    filename = PATH_WORK / 'src/modules/config/palavras_chave_dominios.json'
+    print(filename)
+    
+    palavras_chave = []
+
+    while True:
+        escolha = input('Você deseja definir os domínios que deverão ser procurados? s/n\n>>> ').lower()
+        if escolha == 's':
+            print('''
+    ##################################################################################
+    |Escolha uma palavra ou sequência que melhor represente o remetente ex:          |
+    |                                                                                |
+    |Nos emails 'exemplo1@camisetas.com.br' ou 'exemplo2@camisetas_lisas.com.br'     |
+    |se você escolher "camisetas" como palavra chave, será criada a pasta "camisetas"|              
+    |e os emails e arquivos dos dois endereços de e-mail, estarão dentro dessa pasta.|
+    |                                                                                |
+    ##################################################################################
+\n''')
+            palavra_chave = input('Palavra-chave: ')
+            if palavra_chave.strip():
+                palavras_chave.append(palavra_chave)
+            else:
+                print("A palavra-chave não pode estar vazia. Tente novamente.")
+                continue
+
+            escolha_2 = input('Deseja inserir outra palavra chave? s/n').lower()
+            if escolha_2 == 's':
+                continue
+            if escolha_2 == 'n':
+                break
+        if escolha == 'n':
+            print("Encerrando a definição de domínios.")
+
+    with open(filename, 'w', encoding='utf-8') as file:
+        json.dump(palavras_chave, file, ensure_ascii=False, indent=4)
+
+    print("Lista de palavras-chave definida:", palavras_chave)

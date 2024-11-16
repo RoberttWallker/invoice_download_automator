@@ -4,12 +4,10 @@ import email
 from .metodos import *
 import imaplib
 from pathlib import Path
+import time
 
-palavras_chave_dominios = [
-    'mob', 'apicesc', 'arquivei', 'oi.digital', 'algartelecom',
-    'infinity', 'npxtech', 'alares', 'gigamaisfibra',
-    'desempenho', 'brisanet', 'hostgator'
-]
+PATH_WORK = Path.cwd()
+palavras_chave = PATH_WORK / 'src/modules/config/palavras_chave_dominios.json'
 
 def download_anexos(data_inicio):
     if not filename.exists():
@@ -40,13 +38,33 @@ def download_anexos(data_inicio):
 
             executar_segundo_for = False
 
-            for palavra in palavras_chave_dominios:
-                if palavra in obj_email.dominio:
-                    executar_segundo_for = True
-                    break
+            if not palavras_chave.exists():
+                escolha = input('Deseja filtrar os domínios? s/n').lower()
+                if escolha == 'n':
+                    print('Fazendo download em todos os arquivos disponíveis...')
+                    salvar_arqruivos_total(conteudo_email, obj_email)
+                elif escolha == 's':
+                    criar_lista_dominios()
+                    time.sleep(1)
+                    with open(palavras_chave, 'r') as file:
+                        for palavra in file:
+                            if palavra in obj_email.dominio:
+                                executar_segundo_for = True
+                                break
+                
+                    if executar_segundo_for:
+                        salvar_arqruivos(conteudo_email, obj_email, palavra)
+
+
+            elif palavras_chave.exists():
+                with open(palavras_chave, 'r') as file:
+                    for palavra in file:
+                        if palavra in obj_email.dominio:
+                            executar_segundo_for = True
+                            break
             
-            if executar_segundo_for:
-                salvar_arqruivos(conteudo_email, obj_email, palavra)
+                if executar_segundo_for:
+                    salvar_arqruivos(conteudo_email, obj_email, palavra)
 
         except imaplib.IMAP4.abort as e:
             print(f"Conexão abortada: {e}. Tentando reconectar...")
