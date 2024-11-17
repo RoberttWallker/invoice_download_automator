@@ -1,26 +1,30 @@
-from .connection import init_connection, connection, reconnection, filename
+from .connection import init_connection, connection, reconnection, file_config, file_dominios, obter_disco_padrao
 import chardet
 import email
 from .metodos import *
 import imaplib
 from pathlib import Path
 
-palavras_chave_dominios = [
-    'mob', 'apicesc', 'arquivei', 'oi.digital', 'algartelecom',
-    'infinity', 'npxtech', 'alares', 'gigamaisfibra',
-    'desempenho', 'brisanet', 'hostgator'
-]
-
 def download_anexos(data_inicio):
-    if not filename.exists():
+    if not file_config.exists():
         conn = init_connection()
     else:
         conn = connection()
+
+    caminho_downloads = obter_disco_padrao()
+
+    if file_config.exists():
+        with open(file_config, 'r') as file:
+            arquivo = json.load(file)
+            caminho_downloads = arquivo[0]['caminho_downloads']
 
     status, numEmails = conn.search(None, f'SINCE "{data_inicio}"') # type: ignore
     if status != "OK":
         print("Erro ao buscar emails.")
         return
+    
+    if not numEmails[0]:
+        print('Nenhum email encontrado para a data especificada.')
 
     # Listar todos os emails encontrados
     for num in numEmails[0].split():
@@ -38,15 +42,25 @@ def download_anexos(data_inicio):
 
             obj_email = obter_perfil_email(conteudo_email)
 
-            executar_segundo_for = False
+            if file_dominios.exists():
+                with open(file_dominios, 'r') as file:
+                    palavras_chave_dominios = json.load(file)
+                    if palavras_chave_dominios:
+                        executar_segundo_for = False
 
-            for palavra in palavras_chave_dominios:
-                if palavra in obj_email.dominio:
-                    executar_segundo_for = True
-                    break
+                        for palavra in palavras_chave_dominios:
+                            if palavra in obj_email.dominio:
+                                executar_segundo_for = True
+                                break
+                
+                        if executar_segundo_for:
+                            salvar_arqruivos(conteudo_email, obj_email, palavra, caminho_disco=str(caminho_downloads))
+                    else:
+                        salvar_arqruivos(conteudo_email, obj_email, caminho_disco=str(caminho_downloads))
+            else:
+                salvar_arqruivos(conteudo_email, obj_email, caminho_disco=str(caminho_downloads))
+
             
-            if executar_segundo_for:
-                salvar_arqruivos(conteudo_email, obj_email, palavra)
 
         except imaplib.IMAP4.abort as e:
             print(f"Conexão abortada: {e}. Tentando reconectar...")

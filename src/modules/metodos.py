@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from time import mktime
 from pathlib import Path
-
+import json
 
 def assunto_from_bytes(subject):
     assunto, encoding = decode_header(subject)[0]
@@ -63,15 +63,21 @@ def formatar_data(data):
     data_formatada = datetime.strptime(data, "%d/%m/%Y").strftime("%d-%b-%Y")
     return data_formatada
 
-def salvar_arqruivos(conteudo_email, obj_email, palavra_chave_dominio):
+def salvar_arqruivos(conteudo_email, obj_email, palavra_chave_dominio='padrao', caminho_disco='C:\\'):
     for part in conteudo_email.walk():
         if part.get_content_maintype() == 'multipart':
             continue
         if part.get('Content-Disposition') is None:
             continue
-        filePath = Path('E:/CONTAS')
-        filePathCompleto = filePath / palavra_chave_dominio / obj_email.remetente_email / obj_email.mes_ano
 
+        filePath = Path(caminho_disco)
+
+        if palavra_chave_dominio == 'padrao':
+            filePathCompleto = filePath / obj_email.dominio / obj_email.remetente_email / obj_email.mes_ano
+        else:
+            filePathCompleto = filePath / palavra_chave_dominio / obj_email.remetente_email / obj_email.mes_ano
+
+        
         # Cria os diretórios, se necessário
         filePathCompleto.mkdir(parents=True, exist_ok=True)
 
@@ -134,3 +140,23 @@ def obter_perfil_email(conteudo_email):
     obj_email = PerfilEmail(assunto, remetente_email, remetente_nome, dominio, data, destinatario, mes_ano)
                 
     return obj_email
+
+def salvar_palavras_chave(file_dominios, palavra):
+    if file_dominios.exists():
+        with open(file_dominios, 'r') as file:
+            try:
+                palavras_chave = json.load(file) 
+            except json.JSONDecodeError:
+                palavras_chave = []           
+    else:
+        palavras_chave = []
+
+    if palavra not in palavras_chave:
+        palavras_chave.append(palavra)
+
+    with open(file_dominios, 'w') as file:
+        json.dump(palavras_chave, file, indent=4)
+        print('Palavra chave gravada com sucesso!')
+
+
+    

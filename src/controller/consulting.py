@@ -2,12 +2,14 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+
 # Insere o diretório src no sys.path para poder fazer as importações corretamente
 ROOT_PATH = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_PATH))
 
 # Pasta raiz de trabalho do aplicativo
 PATH_WORK = Path.cwd()
+
 
 # Importações dos módulos após inserir src no sys.path
 from modules.consultas import download_anexos
