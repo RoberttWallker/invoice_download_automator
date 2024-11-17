@@ -3,7 +3,6 @@ import chardet
 import email
 from .metodos import *
 import imaplib
-from pathlib import Path
 
 def download_anexos(data_inicio):
     if not file_config.exists():
